@@ -13,13 +13,15 @@ test("server exposes only public assets and same-origin validated coach requests
     const health = await (await fetch(`${origin}/api/health`)).json();
     assert.equal(health.providerConfigured, false);
     for (const file of ["", "index.html", "src/app.js", "src/styles.css", "src/skill-chart.mjs", "src/recommendation-view.mjs",
-      "src/hr-summary.mjs", "shared/recommendations.mjs", "data/career_quest/employees.json",
+      "src/hr-summary.mjs", "src/career-floor.mjs", "src/impact-preview.mjs", "src/journey-view.mjs",
+      "vendor/three/three.module.js", "vendor/three/three.core.js", "shared/recommendations.mjs", "data/career_quest/employees.json",
       "data/career_quest/events.json", "data/career_quest/skills.json", "data/career_quest/activity_history.csv"]) {
       assert.equal((await fetch(`${origin}/${file}`)).status, 200, file);
     }
     for (const file of [".env", ".git/config", "server.mjs", "coach.mjs", "docs/agent/runtime.md", "backend/.env", "backend/.env.example",
       "backend/src/server.mjs", "backend/src/coach.mjs", "backend/src/domain/recommendations.mjs", "backend/tests/server.test.mjs",
-      "frontend/tests/skill-chart.test.mjs", "src/server.mjs", "shared/coach.mjs"]) {
+      "frontend/tests/skill-chart.test.mjs", "src/server.mjs", "shared/coach.mjs", "node_modules/three/package.json",
+      "vendor/three/package.json", "vendor/three/three.webgpu.js"]) {
       assert.equal((await fetch(`${origin}/${file}`)).status, 404, file);
     }
     const employee = dataset.employees.find(item => item.career_goal);
