@@ -51,13 +51,19 @@
         <section id="skills" class="skills-panel">
           <div class="section-heading"><div><span class="eyebrow">ТВОЙ ПРОФИЛЬ</span><h2 id="skills-heading">Навыки</h2></div><span class="count-pill" id="gap-count">—</span></div>
           <p class="panel-note" id="skills-note">Загрузка оценки навыков…</p>
+          <div class="skill-viz">
+            <div class="skill-viz-heading"><b>Карта навыков</b><span>Выбери точку или навык</span></div>
+            <div class="radar-legend"><span><i class="radar-dot current"></i>Текущий расчётный уровень</span><span><i class="radar-dot target"></i>Требование роли</span></div>
+            <div id="skill-radar" class="skill-radar" aria-label="Интерактивная диаграмма навыков"></div>
+          </div>
+          <div id="skill-focus" class="skill-focus" aria-live="polite"></div>
           <div id="skill-list" class="skill-list"></div>
-          <div class="skill-footnote"><span class="legend-dot"></span> Текущий уровень <span class="legend-target"></span> Требование Middle</div>
+          <p class="skill-footnote">Расчётный уровень включает оценку из профиля и ожидаемый эффект завершённых после неё активностей. Рост нужно подтвердить оценкой.</p>
         </section>
 
         <section id="steps" class="steps-panel">
           <div class="section-heading"><div><span class="eyebrow">ПОДХОДЯТ ТЕБЕ</span><h2>Рекомендации</h2></div><span class="spark">✳</span></div>
-          <p class="panel-note">Сначала проверяем доступность и соответствие, затем сравниваем пользу для цели.</p>
+          <p id="recommendations-note" class="panel-note">Сначала проверяем доступность и соответствие, затем сравниваем пользу для цели.</p>
           <div id="recommendations" class="recommendations"></div>
           <p class="simulation-note"><span>ⓘ</span> Расчётный рост после обучения нужно подтвердить практикой или оценкой.</p>
           <div class="career-options">

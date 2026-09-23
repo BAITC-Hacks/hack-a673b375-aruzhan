@@ -22,6 +22,7 @@ Run recommendation tests with `node --test`.
 - Uses the dataset reference date and real employee profiles, role requirements, event rules, sessions, and activity history.
 - Excludes mandatory courses, wrong-role or wrong-grade activities, unmet prerequisites, completed one-time courses, active enrollments, past sessions, and events that do not improve skills for the selected career goal.
 - Accounts for completed learning after the employee's last skill review before calculating gaps and recommendations.
+- Adds an interactive, accessible radar comparison of the profile against the selected role. Selecting a skill shows its assessment, estimated post-learning contribution, remaining gap, progress, and only eligible matching activities; selecting an activity returns to its skill.
 - Ranks critical target skills first, then the number and amount of goal-aligned improvements, then improvement per hour and the next available date. The reasons show the matching skills and requirements.
 - Shows upward and same-grade lateral skill matches. The dataset does not contain vacancies, manager outcomes, or business ROI, so match percentages are not hiring probabilities and no ROI is claimed.
 - Lets a demo participant simulate completion in the current browser tab. The resulting gain is an estimate from the dataset and still needs a real assessment to confirm proficiency.
