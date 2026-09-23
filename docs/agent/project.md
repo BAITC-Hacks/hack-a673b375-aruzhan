@@ -33,7 +33,7 @@ Primary green and secondary yellow are sourced in [Halyk brand evidence](../haly
 
 - AGENTS.md: entry point; CLAUDE.md and GEMINI.md: synchronized copies.
 - docs/agent/: project facts, workflow, planning, runtime requirements, and source analysis.
-- README.md: setup, workflow, provider contract and limitations.
+- README.md, README.kk.md, README.ru.md: synchronized English, Kazakh and Russian judge guides, setup, evaluation, provider contract and limitations; update all three with significant project changes.
 - docs/recommendation-evaluation.md: coverage, rule audit and representative relevance review.
 - docs/plans/recommendation-core.md: implementation increment.
 

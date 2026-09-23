@@ -1,81 +1,133 @@
-# hack-a673b375-aruzhan
-Hackathon team repository for Aruzhan
+# Career Quest
 
-## Career Quest prototype
+**Turn a career goal into a clear, explainable next learning step.**
 
-A local demo built on the supplied synthetic Career Quest dataset (200 employees, 40 activities, 60 skills, and 2,743 participation records).
+**English** · [Қазақша](README.kk.md) · [Русский](README.ru.md)
 
-### Run
+Hackathon prototype by team **Aruzhan**, built for the Halyk Career Quest case using the supplied synthetic data. Employees explore development options; HR sees shared competency gaps.
 
-From this folder, install the pinned dependency and start the Node 22 server:
+## Why it matters
+
+A course catalog alone does not tell an employee what to learn next or why. Career Quest connects the employee's skills, learning history and chosen role to activities they can actually take. It explains both useful next steps and gaps the catalog cannot currently address.
+
+## What judges can try
+
+| Capability | What the prototype demonstrates |
+| --- | --- |
+| Personal career journey | A Three.js career floor with up to three eligible A/B/C checkpoints and a detail panel for each activity. |
+| Explainable recommendations | Role, grade, prerequisites, participation history, session availability and target skill gains determine the result; source records and filter diagnostics are visible. |
+| Skills and career exploration | Compare skills with a selected role and grade, inspect individual gaps, and explore upward or same-grade lateral skill matches. |
+| Impact preview | Preview estimated skill coverage, then Undo. Assessed skills, completion history and HR totals stay unchanged. |
+| HR insights | See the five most common assessed skill gaps against employees' saved goals, with explicit employee counts. |
+| Optional AI coach | A bounded tool workflow retrieves evidence and proposes a plan; application code validates activity choices and renders exact facts. |
+| Accessible alternatives | Native keyboard/touch controls, a manual 2D view, a WebGL fallback and reduced-motion support. |
+
+## Run locally
+
+Requires **Node.js 22.14.0 or later**, npm and a modern browser. From the repository root:
 
 ```powershell
 npm ci
 npm start -- 4174
 ```
 
-Open <http://127.0.0.1:4174> and stop the server with `Ctrl+C`. A static Python server cannot run the coach API.
+Open [Career Quest on localhost](http://127.0.0.1:4174). Stop with `Ctrl+C`. The default port is `4173` when neither a port argument nor `PORT` is supplied. There is no build step; Three.js `0.186.0` is pinned in the lockfile. Use the Node server to run the coach API.
 
-Run tests with `npm test`; evaluate all profiles with `npm run evaluate`. Syntax/whitespace checks: `npm run check` and `git diff --check`. Three.js `0.186.0` is pinned in the lockfile; no build step is required. Without a port argument, the server uses 4173.
+**No API key is needed for the main demo.** Recommendations, skill exploration, impact previews and HR insights work locally after installation. The optional AI coach needs server credentials and network access.
 
-### Project structure
+## Three-minute judge walkthrough
+
+The app's main navigation is in English; the labels below match the UI. These three README versions translate the documentation, not the application.
+
+1. **Start with `E0101`** in `Employee profile` (the default). In `My journey`, inspect the Backend Engineer Junior → Middle goal and the A/B/C choices: `EV_005`, `EV_012`, `EV_040`.
+2. **Explain the first recommendation.** Select A and read `Why this helps`. Open `Why it fits you & what comes next` → `View supporting records` for the underlying evidence, then select `Preview impact`. Estimated coverage moves from **42% to 48%** while assessed coverage stays **42%**. Press `Undo`; try `2D view` to demonstrate the alternative controls.
+3. **Explore a skill and a destination.** Open `Skills` and select SQL. This separate skill focus does not replace the overall recommendations. Use `Change goal` to explicitly choose another role and grade; transient selections and previews reset.
+4. **Show HR value.** Open `HR insights` to inspect aggregate assessed gaps. A local goal change or impact preview does not alter these saved-goal totals.
+5. **Show an honest edge case.** Select `E0010` for a genuine catalog gap, `E0176` for a prerequisite step (`EV_020` toward `EV_021`, conditional on reassessment and session availability), or `E0003` for an employee who must choose a goal first.
+
+Optional, after configuring the provider: expand `AI career coach`, select `Explain my next steps`, and inspect `What the coach checked`. Select a returned step to read its AI explanation under `Why this helps` and its practice suggestion under `Try it at work`. Practice suggestions are outside the activity catalog; they do not create bookings or assessed gains. Without a key, the coach reports that it is unavailable.
+
+## How recommendations work
+
+```mermaid
+flowchart LR
+    A[Profile, goal and learning history] --> B[Shared rule engine]
+    C[Skills, role requirements and activity catalog] --> B
+    B --> D[Eligible steps, gaps and evidence]
+    D --> E[Journey, skills and impact preview]
+    D --> F[Optional AI coach]
+    F --> G[Validated plan]
+```
+
+- **Eligibility first:** exclude mandatory activities, wrong current roles or grades, active enrollments, completed non-repeatable activities, unmet prerequisites, unavailable sessions and activities that do not improve a remaining target gap. A desired role does not grant access to its restricted courses.
+- **Evidence-based ordering:** prioritize critical target gaps, number of skills advanced and total gap reduction. Related missed/declined/dropped participation is a tie-breaker, followed by efficiency, duration, session date and stable event ID.
+- **Separate assessment from estimates:** completed learning after the last review contributes catalog-based estimated gains up to the dataset date. It does not overwrite assessed proficiency. Local impact previews never enter completion history or coach evidence.
+- **Keep missing information visible:** an absent goal requires a choice; an empty catalog result stays empty. Eligible one-step prerequisite suggestions are separate from direct recommendations. The top three are individual options, not an optimized multi-course schedule.
+
+## Data and evaluation
+
+The supplied dataset contains **200 employees across 8 roles, 40 activities, 60 skills and 2,743 participation records**. Calculations use the fixed snapshot **2026-10-01**, not the computer clock.
+
+Reproduced locally with `npm run evaluate` on **2026-09-23**:
+
+| Measure | Result |
+| --- | ---: |
+| Employee profiles evaluated | 200 |
+| Profiles with an explicit goal | 134 |
+| Goal-set profiles receiving direct suggestions | 108 / 134 (80.6%) |
+| Direct recommendations checked, default top three | 233 |
+| Prerequisite suggestions | 6 across 6 profiles |
+| Entries checked across all direct/prerequisite candidate lists | 310 |
+| Detected eligibility violations | 0 |
+| Profiles without a goal / goal-set profiles without a direct suggestion | 66 / 26 |
+
+These measure **coverage and constraint validity**. The data has no ground-truth ranking, expert relevance labels or measured career outcomes, so these figures do not establish recommendation accuracy or business impact. See the [rule audit and representative review](docs/recommendation-evaluation.md).
+
+## Optional AI coach setup
+
+If `backend/.env` does not already exist, copy [backend/.env.example](backend/.env.example) to that path. Set `OPENAI_API_KEY` locally and restart the server. Keep credentials out of browser code, commits and chat. The default configured model is `gpt-6-luna`, with reasoning effort `none` to limit latency and token use. An `OPENAI_MODEL` override must support the adapter's Responses, function-calling and structured-output contract.
+
+The coach uses `retrieve_profile`, `inspect_gaps` and `find_eligible_activities`. It selects activity/skill IDs and reason codes, and supplies brief plain-text explanations and practice suggestions with source references. Code checks eligibility, reference membership, narrative format and narrowly defined unsupported promises; those checks do not prove the semantic accuracy of AI-written prose. Exact gains, dates and progress come from deterministic calculations. Supporting records are hidden behind optional disclosures, and the tool trace remains available.
+
+Runtime limits: **30 seconds, 5 model rounds, 9 tool calls, 1,200 output tokens per round and 24,000 cumulative tokens**. Credentials stay server-side. The server binds to `127.0.0.1` and serves only explicitly allowed frontend assets, the shared pure engine and synthetic dataset files. Other backend source, tests, scripts and `.env` files are excluded from public routes.
+
+**One bounded live provider check passed** on **2026-09-23** for `E0101` with `gpt-6-luna`: three checked steps, three tool calls, **8,771 ms**, **4,907 input tokens** and **458 output tokens**. This confirms the integration for one profile; it does not establish recommendation accuracy or general plan quality. Offline tests additionally cover fixture responses and failure cases.
+
+## Stack and repository map
+
+Vanilla HTML/CSS/JavaScript modules, Three.js, and a native Node HTTP server and test runner. The browser and backend share one recommendation engine.
 
 ```text
 frontend/
-  index.html
-  src/                  # Browser UI, 3D floor, styles and view helpers
+  index.html            # Application entry point
+  src/                  # Journey, 3D floor, skills, HR and styles
   tests/                # Frontend unit tests
 backend/
-  src/
-    server.mjs          # HTTP API and explicit public asset routes
-    coach.mjs           # AI workflow and provider integration
-    domain/
-      recommendations.mjs # One deterministic recommendation engine
-  data/career_quest/    # Supplied synthetic dataset
-  scripts/             # Whole-dataset evaluation
-  tests/               # Domain, coach and HTTP integration tests
-  .env.example
-docs/                   # Project documentation and evaluations
-package.json            # Root start/test/check/evaluate commands
+  src/server.mjs        # HTTP API and explicit public routes
+  src/coach.mjs         # AI workflow and provider adapter
+  src/domain/           # Shared deterministic recommendation engine
+  data/career_quest/    # Supplied synthetic JSON/CSV records
+  scripts/              # Whole-dataset evaluation
+  tests/                # Domain, coach and HTTP integration tests
+  .env.example          # Local provider configuration template
+docs/                   # Evaluation, design evidence and development guidance
 ```
 
-The backend serves the frontend and only explicitly approved assets. The pure recommendation module is shared with the browser at `/shared/recommendations.mjs` to keep previews and server validation consistent without duplicating rules. Other backend source files, tests, scripts and credentials are never served. Public dataset URLs remain `/data/career_quest/*`; files live under `backend/data/`.
+Public URLs stay `/data/career_quest/*`; the shared engine is served at `/shared/recommendations.mjs`. Halyk color references are documented in [brand source evidence](docs/halyk-brand-sources.md).
 
-### Recommendation behavior
+## Verification and current limits
 
-- Uses the dataset reference date and real employee profiles, role requirements, event rules, sessions, and activity history.
-- Excludes mandatory courses, wrong-role or wrong-grade activities, unmet prerequisites, completed one-time courses, active enrollments, past sessions, and events that do not improve skills for the selected career goal.
-- Accounts for completed learning after the employee's last skill review before calculating gaps and recommendations.
-- Opens a compact Journey view: the Three.js career floor and A/B/C checkpoint controls select the same real eligible activities. One detail panel explains the selected step. Skills and HR have separate views; skill focus remains independent of overall recommendations.
-- Ranks critical target skills first, then the number and amount of goal-aligned improvements, then improvement per hour and the next available date. The reasons show the matching skills and requirements.
-- Shows upward and same-grade lateral skill matches. The dataset does not contain vacancies, manager outcomes, or business ROI, so match percentages are not hiring probabilities and no ROI is claimed.
-- Previews a selected activity's expected impact without recording completion, changing eligibility, or overwriting assessed skills. Undo clears the preview; changing the employee or goal clears preview and focus.
+| Command | Purpose |
+| --- | --- |
+| `npm test` | Domain, frontend, coach fixture and HTTP tests |
+| `npm run evaluate` | All employee profiles, eligibility and expected gains |
+| `npm run check` | Syntax checks for the configured entry modules |
+| `git diff --check` | Patch whitespace checks |
 
-The Journey choices show up to three eligible steps for the entire target; the Skills view displays skill-specific activities separately. Goal/employee changes reset skill and event focus. Expand recommendation evidence for eligibility and source records, or diagnostics for candidate counts through every filter. A desired role does not confer eligibility for courses restricted to that role: the current role and grade must qualify.
+Verified locally on **2026-09-23**: **59/59 tests passed**; `npm run evaluate`, `npm run check` and `git diff --check` passed. These checks cover the local implementation and provider fixtures. The separate live check above covers one profile; broader AI relevance and outcome evaluation remain unmeasured.
 
-The headline progress and HR summary use assessed profile levels. Expected post-review gains remain separate estimates. Impact previews do not append history or change assessed skills, HR counts, or the available recommendations. Percentages are coverage of skill requirements, not promotion probabilities.
+This is a local synthetic-data prototype. It has no production authentication or HR authorization, real enrollment, vacancy feed or promotion prediction. Skill coverage is not a hiring probability; catalog gains need reassessment. Employee goal changes and impact previews are local session state. Full UI localization, real-data integration, production access controls and measured user outcomes remain future work.
 
-### Journey controls and fallback
+## Keeping this README current
 
-The 3D floor uses Three.js while native A/B/C buttons remain keyboard and touch accessible. Use the visible 2D control at any time; 2D also provides the fallback when WebGL is unavailable. The same activity selection, evidence, preview and Undo work in both modes. Reduced-motion preferences are respected. The goal dialog changes the target explicitly; it does not imply a vacancy or promotion.
-
-The green and yellow are verified from Halyk's official website CSS: see [brand source evidence](docs/halyk-brand-sources.md).
-
-### AI coach
-
-Copy `backend/.env.example` to `backend/.env`, set `OPENAI_API_KEY` locally, and restart the Node server. Never put the key in browser code or chat. `.env` files are ignored and cannot be served by the static file allowlist. Default model: `gpt-4.1-mini-2025-04-14`; `OPENAI_MODEL` can override it with a Responses/function-calling/Structured-Outputs-compatible model.
-
-The coach calls three bound tools: `retrieve_profile`, `inspect_gaps`, and `find_eligible_activities`. It chooses event IDs, skill IDs and reason codes. Application code validates membership and constructs explanations from evidence; eligibility, gains, dates and progress stay deterministic. The tool trace is visible. Real dataset history is used; local impact previews never enter the coach context.
-
-Limits: 30 seconds, five model rounds, nine tool calls, 1,200 output tokens per round, 24,000 cumulative tokens. No raw profiles or credentials are logged. The server is local-only; this synthetic demo has no production authentication or HR access controls.
-
-No key was configured during implementation. **Live OpenAI behavior is unverified**; offline tests use fixture responses. Without a key the UI explicitly says the coach is unavailable; deterministic recommendations still work. Provider sources: [function calling](https://developers.openai.com/api/docs/guides/function-calling), [GPT-4.1 mini](https://developers.openai.com/api/docs/models/gpt-4.1-mini).
-
-### Examples and evaluation
-
-- E0101: select A/B/C in Journey, inspect the step, preview its impact, and Undo. In Skills, select SQL; overall recommendations remain independent of skill focus.
-- E0010: genuine catalog gap with explicit blockers.
-- E0176: an eligible prerequisite step; further assessment and a fresh session check are required before the advanced activity.
-- E0003: missing career goal; choose a path explicitly.
-
-All 200 employees are evaluated: **108/134** employees with explicit goals receive direct suggestions. **233** direct and **6** prerequisite recommendations have no detected eligibility violations. The other profiles include missing goals and genuine catalog gaps. These metrics measure **coverage and constraint validity, not recommendation accuracy**. The dataset has no ground-truth ranking, measured skill outcomes, or expert relevance labels. See [the representative relevance review](docs/recommendation-evaluation.md) for all eight roles, rule decisions and remaining limitations.
+Every significant change to features, user flows, architecture, setup, configuration, data, evaluation results or limitations must update **README.md, README.kk.md and README.ru.md in the same change**. Keep commands, examples, metrics and caveats equivalent across languages; verify claims against the implementation and relevant checks. This is also part of the repository's [assistant guidance](AGENTS.md) and [development workflow](docs/agent/workflow.md).

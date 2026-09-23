@@ -24,6 +24,8 @@ Do not weaken assertions or disable checks to obtain a passing result. Tests sho
 
 ## Finish and hand off
 
+For every significant change to features, user flows, architecture, setup, configuration, data, evaluation results or limitations, update [English](../../README.md), [Kazakh](../../README.kk.md) and [Russian](../../README.ru.md) READMEs in the same change. Keep the judge walkthrough, commands, examples, metrics and caveats equivalent. Verify relative links and factual claims; report unverified behavior and failing checks honestly. Small internal edits that do not change those facts need no cosmetic README update.
+
 Review the final diff for scope and accidental secrets. Report what changed, commands actually run and their outcomes, and any unverified behavior.
 For a blocker, identify what was tried, the missing condition, and what would unlock progress. Continue independent authorized work.
 When interrupted during substantial work, save the resume point following [plans.md](plans.md). There is no mandatory reset after a fixed number of failures.

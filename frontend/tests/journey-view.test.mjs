@@ -93,19 +93,35 @@ test("matching AI rationale is readable, escaped and separate from canonical eve
   const before = structuredClone(fixture);
   const coachStep = {
     eventId: "EV_API", narrativeSource: "ai",
-    whyThisStep: 'Review <script>alert("model")</script> API decisions with a peer & explain tradeoffs.',
-    howToApply: 'Draft an API review <img src=x onerror=alert(1)> for a work task.',
+    whyThisStep: 'Practice <script>alert("model")</script> API error handling & explain tradeoffs.',
+    practice: {
+      skillId: "SK_API",
+      task: 'Design an API endpoint <img src=x onerror="task()"> for an account transfer.',
+      deliverable: 'API contract <svg onload="deliverable()"> with request and error examples.',
+      successCriteria: [
+        'Reject invalid input <img src=x onerror="checkOne()"> with a useful error.',
+        'Document retry behavior <script>checkTwo()</script> to prevent duplicate transfers.'
+      ]
+    },
     title: "INVENTED_EVENT_TITLE", durationHours: 9875, nextSession: "2035-01-01",
     improvements: [{ skill_id: "SK_API", afterEvent: 9876 }]
   };
   const html = stepCard(fixture.item, fixture.result, null, fixture.skills, fixture.asOfDate, coachStep);
   assert.match(html, /Why this helps/);
-  assert.match(html, /Try it at work/);
+  assert.match(html, /Practice challenge/);
+  assert.match(html, /Deliverable/);
+  assert.match(html, /Done when/);
   assert.match(html, /&lt;script&gt;alert\(&quot;model&quot;\)&lt;\/script&gt;/);
-  assert.match(html, /&lt;img src=x onerror=alert\(1\)&gt;/);
-  assert.doesNotMatch(html, /<script>|<img src=x/);
-  assert.match(html, /suggestion/i);
+  assert.match(html, /&lt;img src=x onerror=&quot;task\(\)&quot;&gt;/);
+  assert.match(html, /&lt;svg onload=&quot;deliverable\(\)&quot;&gt;/);
+  assert.match(html, /&lt;img src=x onerror=&quot;checkOne\(\)&quot;&gt;/);
+  assert.match(html, /&lt;script&gt;checkTwo\(\)&lt;\/script&gt;/);
+  assert.doesNotMatch(html, /<script>|<img src=x|<svg onload/);
+  assert.match(html, /optional/i);
   assert.match(html, /outside.*catalog|not.*catalog/i);
+  assert.match(html, /assessed skills stay unchanged|no assessed.*growth|does not.*assessed/i);
+  const initiallyVisible = html.replace(/<details\b[^>]*>[\s\S]*?<\/details>/g, "");
+  assert.match(initiallyVisible, /Design an API endpoint/, "the concrete task is visible without opening a disclosure");
   assert.match(html, /4 hours/);
   assert.match(html, /15 Oct 2026/);
   assert.match(html, /Target: 3/);
@@ -118,8 +134,8 @@ test("stale or unverified AI prose is ignored while a useful deterministic expla
   const { item, result, skills, asOfDate } = explanationFixture();
   const fallback = stepCard(item, result, null, skills, asOfDate);
   for (const coachStep of [
-    { eventId: "EV_OLD", narrativeSource: "ai", whyThisStep: "STALE_RATIONALE", howToApply: "STALE_PRACTICE" },
-    { eventId: "EV_API", narrativeSource: "unverified", whyThisStep: "UNVERIFIED_RATIONALE", howToApply: "UNVERIFIED_PRACTICE" }
+    { eventId: "EV_OLD", narrativeSource: "ai", whyThisStep: "STALE_RATIONALE", practice: { skillId: "SK_API", task: "STALE_PRACTICE", deliverable: "STALE_ARTIFACT", successCriteria: ["STALE_CHECK"] } },
+    { eventId: "EV_API", narrativeSource: "unverified", whyThisStep: "UNVERIFIED_RATIONALE", practice: { skillId: "SK_API", task: "UNVERIFIED_PRACTICE", deliverable: "UNVERIFIED_ARTIFACT", successCriteria: ["UNVERIFIED_CHECK"] } }
   ]) {
     const html = stepCard(item, result, null, skills, asOfDate, coachStep);
     assert.doesNotMatch(html, /STALE_RATIONALE|STALE_PRACTICE|UNVERIFIED_RATIONALE|UNVERIFIED_PRACTICE/);
@@ -129,6 +145,20 @@ test("stale or unverified AI prose is ignored while a useful deterministic expla
   assert.match(fallback, /API design/);
   assert.match(fallback, /Backend Developer/);
   assert.match(fallback, /Middle/);
+});
+
+test("an AI practice challenge cannot be shown for a skill the activity does not develop", () => {
+  const { item, result, skills, asOfDate } = explanationFixture();
+  const coachStep = {
+    eventId: "EV_API", narrativeSource: "ai", whyThisStep: "This activity supports API design for your target role.",
+    practice: {
+      skillId: "SK_UNRELATED", task: "UNRELATED_TASK", deliverable: "UNRELATED_DELIVERABLE",
+      successCriteria: ["UNRELATED_FIRST_CHECK", "UNRELATED_SECOND_CHECK"]
+    }
+  };
+  const html = stepCard(item, result, null, skills, asOfDate, coachStep);
+  assert.match(html, /This activity supports API design for your target role/);
+  assert.doesNotMatch(html, /Practice challenge|UNRELATED_TASK|UNRELATED_DELIVERABLE|UNRELATED_FIRST_CHECK|UNRELATED_SECOND_CHECK/);
 });
 
 test("recommendation explanations omit internal scoring jargon without dropping evidence or eligibility", () => {
