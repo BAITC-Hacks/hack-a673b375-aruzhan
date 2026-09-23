@@ -16,6 +16,14 @@ dialog { max-width:540px; width:calc(100% - 32px); max-height:85vh; border:1px s
 .application-tip h4 { margin-top:5px; }
 .application-tip p { font-size:13px; margin:0 0 6px; }
 .application-tip small { font-size:10px; color:var(--muted); }
+.application-tip h4 { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.practice-deliverable { margin:10px 0; font-size:12px; line-height:1.5; }
+.practice-deliverable dt { font-weight:600; color:var(--green-dark); margin-bottom:3px; }
+.practice-deliverable dd { margin:0; }
+.practice-checks { font-size:12px; line-height:1.5; margin:10px 0; }
+.practice-checks summary { color:var(--green-dark); font-weight:600; }
+.practice-checks ul { padding-left:18px; margin:8px 0; }
+.practice-checks li { margin-bottom:6px; }
 .source-records li { margin-bottom:8px; }
 .source-records code { display:block; font-size:10px; }
 #coach-status { color:var(--muted); font-size:12px; line-height:1.5; margin:10px 0; }

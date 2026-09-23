@@ -49,6 +49,11 @@ export function stepCard(item, result, preview, skills, asOfDate, coachStep = nu
     : `Build <strong>${e((critical.length ? critical : names).join(" and "))}</strong> ${critical.length ? "— a critical gap" : "— a remaining gap"} for <strong>${e(target.role)} ${e(target.grade)}</strong>.`;
   const evidence=item.evidence?.references ?? [];
   const narrative=coachStep?.eventId===item.event.event_id && coachStep.narrativeSource==="ai" ? coachStep : null;
+  const practice=narrative?.practiceSource==="ai_outside_catalog"
+    && item.improvements.some(gap=>gap.skill_id===narrative.practice?.skillId)
+    && typeof narrative.practice.task==="string" && typeof narrative.practice.deliverable==="string"
+    && Array.isArray(narrative.practice.successCriteria) && narrative.practice.successCriteria.length>=2
+    && narrative.practice.successCriteria.every(check=>typeof check==="string") ? narrative.practice : null;
   const remaining=item.improvements.filter(gap=>gap.afterEvent<gap.requirement);
   const afterStep=isPrerequisite
     ? "Use a fresh skill check to confirm you are ready for the next course. This preparatory step does not promise progress on the target role itself."
@@ -60,7 +65,7 @@ export function stepCard(item, result, preview, skills, asOfDate, coachStep = nu
   ${impact}
   <dl class="step-meta"><div><dt>Time commitment</dt><dd>${item.event.duration_hours} hours · ${e(typeLabel(item.event))}</dd></div><div><dt>${item.nextSession ? "Next catalog session" : "Availability"}</dt><dd>${e(shortSession(item))}${item.nextSession ? "" : " · self-paced"}</dd></div></dl>
   <p class="prerequisite-line">${prerequisites ? `You meet the starting skill levels based on your learning estimate: ${e(prerequisites)}.` : "No prior skill levels required."} ${item.nextSession ? `Session listed in the ${e(formatDate(asOfDate))} catalog; booking is not confirmed.` : ""}</p>
-  ${narrative ? `<section class="application-tip"><h4>Try it at work</h4><p>${e(narrative.howToApply)}</p><small>AI practice suggestion · outside the activity catalog</small></section>` : ""}
+  ${practice ? `<section class="application-tip" aria-label="Practice challenge"><h4>Practice challenge <span class="ai-label">${e(item.improvements.find(gap=>gap.skill_id===practice.skillId).name)}</span></h4><p>${e(practice.task)}</p><dl class="practice-deliverable"><dt>Deliverable</dt><dd>${e(practice.deliverable)}</dd></dl><details class="practice-checks"><summary>Done when</summary><ul>${practice.successCriteria.map(check=>`<li>${e(check)}</li>`).join("")}</ul></details><small>AI suggestion · sandbox task outside the activity catalog. Completing it does not update assessed skills.</small></section>` : ""}
   <details class="evidence-details"><summary>Why it fits you & what comes next</summary><div class="human-explanation"><h4>You can take this step</h4><p>It is open to your current role and grade. ${item.event.event_id === "EV_036" ? "This speaking club welcomes repeat participation." : "You have not completed it before."} You have no unfinished participation in this activity.</p><h4>After this step</h4><p>${e(afterStep)}</p><p>These are expected learning gains. Your assessed skills stay unchanged until a new assessment.</p>${supportingRecords(evidence)}</div></details>
   ${preview ? "" : `<p class="preview-explainer">Explore the estimated skill changes and what would remain. This won't change your profile or enroll you.</p><button type="button" class="primary-button" data-preview="${e(item.event.event_id)}"><span aria-hidden="true">◈</span> Preview impact</button>`}</article>`;
 }
