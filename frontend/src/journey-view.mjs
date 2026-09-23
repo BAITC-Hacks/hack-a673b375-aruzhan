@@ -29,7 +29,15 @@ export function emptyMessage(result) {
   if (result.status === "requirements_met") return "All requirements are covered by the current estimate. Confirm any learning gains with an assessment.";
   return "The catalog has no eligible step for the remaining gaps. Review the blockers below or explore another target.";
 }
-export function stepCard(item, result, preview, skills, asOfDate) {
+export function supportingRecords(references = []) {
+  const label = ref => ref.startsWith("employees.json") ? "Your profile and assessed skills"
+    : ref.startsWith("skills.json#role_profiles") ? "Requirements for your career goal"
+    : ref.startsWith("events.json") ? "Activity details and sessions"
+    : ref.startsWith("skills.json") ? "Skill definition"
+    : ref.startsWith("activity_history") ? "Your participation history" : "Supporting record";
+  return `<details class="evidence-details source-records"><summary>View supporting records</summary><ul>${references.map(ref=>`<li><span>${label(ref)}</span><code>${escapeHtml(ref)}</code></li>`).join("")}</ul></details>`;
+}
+export function stepCard(item, result, preview, skills, asOfDate, coachStep = null) {
   const e=escapeHtml;
   const target=result.targetProfile;
   const prerequisites=Object.entries(item.event.prerequisites ?? {}).map(([id,required])=>`${skills.find(s=>s.skill_id===id)?.name ?? id} ${result.effectiveSkills[id] ?? 0}/${required}`).join(", ");
@@ -40,12 +48,19 @@ export function stepCard(item, result, preview, skills, asOfDate) {
     ? `Build the prerequisite skills for <strong>${e(item.unlocks.map(next=>next.title).join(", "))}</strong>. Reassess them before taking the next course.`
     : `Build <strong>${e((critical.length ? critical : names).join(" and "))}</strong> ${critical.length ? "— a critical gap" : "— a remaining gap"} for <strong>${e(target.role)} ${e(target.grade)}</strong>.`;
   const evidence=item.evidence?.references ?? [];
+  const narrative=coachStep?.eventId===item.event.event_id && coachStep.narrativeSource==="ai" ? coachStep : null;
+  const remaining=item.improvements.filter(gap=>gap.afterEvent<gap.requirement);
+  const afterStep=isPrerequisite
+    ? "Use a fresh skill check to confirm you are ready for the next course. This preparatory step does not promise progress on the target role itself."
+    : remaining.length ? `You would still need ${remaining.map(gap=>`${gap.requirement-gap.afterEvent} more ${gap.requirement-gap.afterEvent===1 ? "level" : "levels"} in ${gap.name}`).join(" and ")}. Other target skills may also need work.`
+    : "This could cover the listed skill gaps. Check your remaining target skills and confirm learning through an assessment.";
   const impact=preview ? `<section class="impact-card" aria-label="Impact preview"><div class="impact-top"><b>Preview only · goal coverage</b><button type="button" class="undo-button" data-undo>Undo</button></div><div class="impact-values"><span>${preview.beforePercent}%</span><span aria-hidden="true">→</span><span>${preview.afterPercent}%</span><small>+${preview.deltaPoints} pp</small></div><p>${preview.remainingGapCount ? `${preview.remainingGapCount} skill gaps would remain${preview.remainingGaps.length ? `, including ${e(preview.remainingGaps.slice(0,2).map(gap=>gap.name).join(" and "))}` : ""}.` : "No estimated target gaps would remain; assessment is still required."}</p><p>Assessed coverage stays ${preview.assessedPercent ?? "—"}%. No course completed or booked.</p></section>` : "";
-  return `<article class="step-card" data-event="${e(item.event.event_id)}"><h3>${e(item.event.title)}</h3><p class="step-why">${why}</p>
+  return `<article class="step-card" data-event="${e(item.event.event_id)}"><h3>${e(item.event.title)}</h3><section class="step-reason"><h4>Why this helps${narrative ? '<span class="ai-label">AI explanation</span>' : ""}</h4><p class="step-why">${narrative ? e(narrative.whyThisStep) : why}</p></section>
   <div class="step-gains" aria-label="Expected skill changes">${item.improvements.map(gap=>`<div class="step-gain ${preview ? "preview-change" : ""}"><div>${Object.hasOwn(target.required_skills,gap.skill_id) ? `<button type="button" data-skill-focus="${e(gap.skill_id)}">${e(gap.name)}${gap.critical ? " *" : ""}</button>` : `<b>${e(gap.name)}</b>`}<small>${isPrerequisite ? "Prerequisite" : "Target"}: ${gap.requirement} · gap ${Math.max(0,gap.requirement-gap.current)} · estimated levels</small></div><span>${gap.current}<span class="gain-arrow" aria-hidden="true">→</span>${gap.afterEvent}</span></div>`).join("")}</div>
   ${impact}
   <dl class="step-meta"><div><dt>Time commitment</dt><dd>${item.event.duration_hours} hours · ${e(typeLabel(item.event))}</dd></div><div><dt>${item.nextSession ? "Next catalog session" : "Availability"}</dt><dd>${e(shortSession(item))}${item.nextSession ? "" : " · self-paced"}</dd></div></dl>
-  <p class="prerequisite-line">${prerequisites ? `Prerequisites met by current estimate: ${e(prerequisites)}.` : "No skill prerequisites."} ${item.nextSession ? `Session listed as of ${e(formatDate(asOfDate))}.` : ""}</p>
-  <details class="evidence-details"><summary>Why you're eligible & supporting evidence</summary><ul><li>Your current role and grade match this activity’s audience.</li><li>Voluntary activity; not in progress. ${item.event.event_id === "EV_036" ? "This speaking club permits repeat participation." : "No previous completion in your history."}</li><li>${item.factors.criticalLevels} critical target levels; ${item.factors.skillsAdvanced} skills advanced; ${item.factors.participationFriction} related missed, declined or dropped activities considered.</li><li>Expected gains use catalog gain/max_level, not a new assessment.${isPrerequisite ? " These gains support the next course’s prerequisites." : ""}</li></ul><p>Dataset records</p><ul>${evidence.map(ref=>`<li>${e(ref)}</li>`).join("")}</ul></details>
+  <p class="prerequisite-line">${prerequisites ? `You meet the starting skill levels based on your learning estimate: ${e(prerequisites)}.` : "No prior skill levels required."} ${item.nextSession ? `Session listed in the ${e(formatDate(asOfDate))} catalog; booking is not confirmed.` : ""}</p>
+  ${narrative ? `<section class="application-tip"><h4>Try it at work</h4><p>${e(narrative.howToApply)}</p><small>AI practice suggestion · outside the activity catalog</small></section>` : ""}
+  <details class="evidence-details"><summary>Why it fits you & what comes next</summary><div class="human-explanation"><h4>You can take this step</h4><p>It is open to your current role and grade. ${item.event.event_id === "EV_036" ? "This speaking club welcomes repeat participation." : "You have not completed it before."} You have no unfinished participation in this activity.</p><h4>After this step</h4><p>${e(afterStep)}</p><p>These are expected learning gains. Your assessed skills stay unchanged until a new assessment.</p>${supportingRecords(evidence)}</div></details>
   ${preview ? "" : `<p class="preview-explainer">Explore the estimated skill changes and what would remain. This won't change your profile or enroll you.</p><button type="button" class="primary-button" data-preview="${e(item.event.event_id)}"><span aria-hidden="true">◈</span> Preview impact</button>`}</article>`;
 }

@@ -7,14 +7,14 @@ import { createCareerFloor } from "./career-floor.mjs";
 import { escapeHtml, formatDate, shortSession, blockerLabels, blockerText, relevantBlocker, visibleSteps, emptyMessage, stepCard } from "./journey-view.mjs";
 
 const $ = selector => document.querySelector(selector);
-const state = { employees:[],roleProfiles:[],skills:[],events:[],history:[],asOfDate:"", selectedEmployeeId:"E0101",goalOverrides:new Map(),selectedSkillId:null,activeEventId:null,selectedEventId:null,previewId:null,lockedId:null,view:"journey",flat:false };
+const state = { employees:[],roleProfiles:[],skills:[],events:[],history:[],asOfDate:"", selectedEmployeeId:"E0101",goalOverrides:new Map(),coachSteps:new Map(),selectedSkillId:null,activeEventId:null,selectedEventId:null,previewId:null,lockedId:null,view:"journey",flat:false };
 let currentResult=null, floor=null, coachRequest=null;
 const getEmployee=()=>state.employees.find(item=>item.employee_id===state.selectedEmployeeId);
 const getGoal=employee=>state.goalOverrides.get(employee.employee_id) ?? employee.career_goal;
 const allEligible=()=>[...currentResult.recommendations,...(currentResult.prerequisiteSteps ?? [])];
 const selectedStep=()=>allEligible().find(item=>item.event.event_id===state.selectedEventId);
 function resetContext() { resetProfileFocus(state); state.selectedEventId=null; state.previewId=null; state.lockedId=null; clearCoach(); }
-function clearCoach() { coachRequest?.abort(); coachRequest=null; $("#coach-status").textContent=""; $("#coach-plan").replaceChildren(); $("#coach-trace").replaceChildren(); }
+function clearCoach() { coachRequest?.abort(); coachRequest=null; state.coachSteps.clear(); $("#coach-status").textContent=""; $("#coach-plan").replaceChildren(); $("#coach-trace").replaceChildren(); }
 function showToast(message) { const toast=$("#toast"); toast.textContent=message; toast.classList.add("visible"); clearTimeout(showToast.timer); showToast.timer=setTimeout(()=>toast.classList.remove("visible"),3000); }
 function setView(view) {
   state.view=view;
@@ -67,7 +67,7 @@ function renderRecommendation(result) {
   } else if(item) {
     const first=visibleSteps(result)[0]?.event.event_id===item.event.event_id;
     $("#recommendations-note").textContent=preview ? "Explore the change · nothing saved" : item.kind==="prerequisite" ? "Build the foundation first" : first ? "Your recommended next move" : "Another step toward your goal";
-    $("#recommendations").innerHTML=stepCard(item,result,preview,state.skills,state.asOfDate);
+    $("#recommendations").innerHTML=stepCard(item,result,preview,state.skills,state.asOfDate,state.coachSteps.get(item.event.event_id));
   } else {
     $("#recommendations-note").textContent="Your next move";
     $("#recommendations").innerHTML=`<p class="empty-state">${escapeHtml(emptyMessage(result))}</p>${!result.targetProfile ? '<button type="button" class="primary-button" data-choose-goal>Choose a goal</button>' : ""}`;
@@ -144,19 +144,25 @@ $("#recommendations").addEventListener("click",event=>{
 for(const selector of ["#skill-list","#skill-radar"]) $(selector).addEventListener("click",event=>{const button=event.target.closest("[data-skill-id]"); if(button) selectSkill(button.dataset.skillId);});
 $("#skill-radar").addEventListener("keydown",event=>{const button=event.target.closest("[data-skill-id]"); if(button&&["Enter"," "].includes(event.key)){event.preventDefault(); selectSkill(button.dataset.skillId);}});
 $("#skill-focus").addEventListener("click",event=>{if(event.target.closest("[data-clear-skill]")){state.selectedSkillId=null; renderSkills(getEmployee(),currentResult);} const button=event.target.closest("[data-event-focus]"); if(button) selectCheckpoint(button.dataset.eventFocus);});
+$("#coach-plan").addEventListener("click",event=>{const button=event.target.closest("[data-event-focus]"); if(button) selectCheckpoint(button.dataset.eventFocus);});
 $("#rotate-floor").addEventListener("click",()=>floor?.rotate("right"));
 $("#toggle-floor").addEventListener("click",()=>{state.flat=!state.flat; $("#floor-scene").classList.toggle("list-mode",state.flat); $("#floor-fallback").hidden=!state.flat; $("#toggle-floor").textContent=state.flat ? "3D view" : "2D view"; $("#toggle-floor").setAttribute("aria-pressed",String(state.flat)); $("#rotate-floor").disabled=state.flat; if(!state.flat) updateFloor();});
 
 $("#coach-generate").addEventListener("click",async()=>{
-  clearCoach(); const request=new AbortController(); coachRequest=request;
+  clearCoach(); renderRecommendation(currentResult); const request=new AbortController(); coachRequest=request;
   $("#coach-generate").disabled=true; $("#coach-status").textContent="Checking your profile, gaps and available steps…";
   const timeout=setTimeout(()=>request.abort(),65000);
   try {
     const response=await fetch("/api/coach",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({employeeId:state.selectedEmployeeId,goal:getGoal(getEmployee()) ?? null}),signal:request.signal});
     const plan=await response.json(); if(coachRequest!==request) return;
-    $("#coach-status").textContent=plan.status==="ready" ? "Plan validated against the catalog and actual history. Gains remain estimates." : plan.status==="unconfigured" ? "AI coach is not connected yet. Your evidence-based recommendations remain available." : "The coach could not produce a validated plan. Your existing recommendations are still available.";
-    $("#coach-plan").innerHTML=plan.status==="ready" ? (plan.steps ?? []).map(step=>`<article class="coach-result"><h3>${escapeHtml(step.title ?? step.eventId)}</h3><p class="muted">${escapeHtml(step.explanation)}</p><p class="muted">${step.durationHours}h · ${step.nextSession ? escapeHtml(formatDate(step.nextSession)) : "Self-paced"}</p><details class="evidence-details"><summary>Dataset evidence</summary><p>${escapeHtml((step.evidence ?? []).join(" · "))}</p></details></article>`).join("") : "";
-    $("#coach-trace").innerHTML=(plan.trace ?? []).map(item=>`<li>${escapeHtml(item.tool)}: ${escapeHtml(item.status)}</li>`).join("");
+    $("#coach-status").textContent=plan.status==="ready" ? (plan.steps.length ? "Your AI explanations are ready. Select a step to read them. Eligibility and figures are checked against your data; practice tips are suggestions." : "The coach found no eligible catalog steps for this goal. Check the blockers above.") : plan.status==="unconfigured" ? "Add your OpenAI key to backend/.env and restart the server to connect the coach. Your recommendations remain available." : "The coach could not produce a checked plan. Your existing recommendations are still available.";
+    if(plan.status==="ready") {
+      state.coachSteps=new Map((plan.steps ?? []).map(step=>[step.eventId,step]));
+      renderRecommendation(currentResult);
+    }
+    $("#coach-plan").innerHTML=plan.status==="ready" ? (plan.steps ?? []).map(step=>`<button type="button" class="skill-event" data-event-focus="${escapeHtml(step.eventId)}"><span><b>${escapeHtml(step.title)}</b><small>Read the AI explanation</small></span><span aria-hidden="true">↗</span></button>`).join("") : "";
+    const toolNames={retrieve_profile:"Read your profile",inspect_gaps:"Compared your skills with your goal",find_eligible_activities:"Checked available development steps"};
+    $("#coach-trace").innerHTML=(plan.trace ?? []).map(item=>`<li>${escapeHtml(toolNames[item.tool] ?? "Checked supporting data")}: ${escapeHtml(item.status==="ok" ? "done" : item.status)}</li>`).join("");
   } catch(error) { if(coachRequest===request) $("#coach-status").textContent=error.name==="AbortError" ? "The coach timed out. Your existing plan is still available." : "Coach unavailable. Start the app server and try again."; }
   finally {clearTimeout(timeout); if(coachRequest===request){coachRequest=null; $("#coach-generate").disabled=!currentResult.targetProfile;}}
 });
