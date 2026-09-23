@@ -72,9 +72,9 @@ export function deriveEffectiveSkills({ employee, events, history }) {
     const event = eventById.get(record.event_id);
     for (const development of event?.develops_skills ?? []) {
       const current = levels[development.skill_id] ?? 0;
-      levels[development.skill_id] = Math.min(
-        development.max_level,
-        current + development.gain
+      levels[development.skill_id] = Math.max(
+        current,
+        Math.min(development.max_level, current + development.gain)
       );
     }
   }
@@ -89,11 +89,29 @@ function completionProgress(profile, levels) {
   return { earned, total, percent: total === 0 ? 100 : Math.round(earned / total * 100) };
 }
 
-function eligibleSession(event, asOfDate) {
+function eligibleSession(event, asOfDate, eventHistory = []) {
   if (event.format === "self_paced") return null;
+  const latestRecordedDate = eventHistory.map(record => record.date)
+    .filter(date => /^\d{4}-\d{2}-\d{2}$/.test(date))
+    .sort()
+    .at(-1);
+  const cutoff = latestRecordedDate && latestRecordedDate >= asOfDate ? latestRecordedDate : asOfDate;
+  const exclusive = latestRecordedDate && latestRecordedDate >= asOfDate;
   return (event.upcoming_sessions ?? [])
-    .filter(date => /^\d{4}-\d{2}-\d{2}$/.test(date) && date >= asOfDate)
+    .filter(date => /^\d{4}-\d{2}-\d{2}$/.test(date)
+      && (exclusive ? date > cutoff : date >= cutoff))
     .sort()[0] ?? undefined;
+}
+
+function latestStatusesByEvent(history, employeeId) {
+  const latest = new Map();
+  history
+    .filter(record => record.employee_id === employeeId)
+    .slice()
+    .sort((left, right) => left.date.localeCompare(right.date)
+      || (left.record_id ?? "").localeCompare(right.record_id ?? ""))
+    .forEach(record => latest.set(record.event_id, record.status));
+  return latest;
 }
 
 function getImprovements(event, targetProfile, levels, skillById) {
@@ -103,7 +121,7 @@ function getImprovements(event, targetProfile, levels, skillById) {
     const skillId = development.skill_id;
     if (!(skillId in required)) return [];
     const current = levels[skillId] ?? 0;
-    const afterEvent = Math.min(development.max_level, current + development.gain);
+    const afterEvent = Math.max(current, Math.min(development.max_level, current + development.gain));
     const levelAfter = Math.min(required[skillId], afterEvent);
     const levelBefore = Math.min(required[skillId], current);
     const gain = levelAfter - levelBefore;
@@ -152,9 +170,10 @@ export function rankLearningActivities({ employee, events, roleProfiles, skills,
   const completedEventIds = new Set(history
     .filter(record => record.employee_id === employee.employee_id && record.status === "completed")
     .map(record => record.event_id));
-  const activeEventIds = new Set(history
-    .filter(record => record.employee_id === employee.employee_id && ACTIVE_STATUSES.has(record.status))
-    .map(record => record.event_id));
+  const latestStatuses = latestStatusesByEvent(history, employee.employee_id);
+  const activeEventIds = new Set([...latestStatuses]
+    .filter(([, status]) => ACTIVE_STATUSES.has(status))
+    .map(([eventId]) => eventId));
   const skillById = skillMap(skills);
 
   const recommendations = events.flatMap(event => {
@@ -168,7 +187,10 @@ export function rankLearningActivities({ employee, events, roleProfiles, skills,
       .every(([skillId, minimum]) => (effectiveSkills[skillId] ?? 0) >= minimum);
     if (!prerequisitesMet) return [];
 
-    const nextSession = eligibleSession(event, asOfDate);
+    const eventHistory = history.filter(record =>
+      record.employee_id === employee.employee_id && record.event_id === event.event_id
+    );
+    const nextSession = eligibleSession(event, asOfDate, eventHistory);
     if (nextSession === undefined) return [];
     const improvements = getImprovements(event, targetProfile, effectiveSkills, skillById);
     if (improvements.length === 0) return [];

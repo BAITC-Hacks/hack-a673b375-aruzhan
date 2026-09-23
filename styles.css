@@ -151,3 +151,26 @@ h1 { margin: 8px 0 6px; font-size: clamp(23px, 2.3vw, 30px); font-weight: 650; l
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+.employee-select { max-width: 285px; width: 250px; padding: 8px 28px 8px 10px; border: 1px solid #dbe6e0; border-radius: 6px; background: #fff; color: #345047; font-size: 10px; }
+.employee-select:focus-visible, .path-action:focus-visible { outline: 3px solid #e3bd38; outline-offset: 2px; }
+.empty-state { margin: 0; padding: 14px; border: 1px dashed #dce5df; border-radius: 6px; color: #71817a; font-size: 11px; line-height: 1.5; }
+.career-options { margin-top: 17px; padding-top: 15px; border-top: 1px solid var(--line); }
+.career-options-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.career-options-heading h3 { margin: 0; color: #30483f; font-size: 13px; font-weight: 650; }
+.career-options-heading > span { color: #89968f; font-size: 9px; white-space: nowrap; }
+.career-options-note { margin: 6px 0 10px; color: #788780; font-size: 9px; line-height: 1.45; }
+.career-option-list { display: grid; gap: 7px; }
+.career-option { display: flex; align-items: center; justify-content: space-between; gap: 9px; padding: 9px 10px; border: 1px solid #e7ece8; border-radius: 6px; background: #fbfcfb; }
+.career-option-kind { color: #71867d; font-size: 8px; }
+.career-option h4 { margin: 3px 0; color: #30483f; font-size: 10px; font-weight: 650; }
+.career-option p { margin: 0; color: #74837c; font-size: 9px; line-height: 1.4; }
+.career-option small { display: block; margin-top: 4px; color: #9a7b38; font-size: 8px; }
+.path-action { flex: 0 0 auto; border: 1px solid #cbded3; border-radius: 5px; padding: 6px 8px; background: #f0f7f2; color: #28624d; font-size: 9px; font-weight: 600; cursor: pointer; }
+.path-action:hover { background: #e0efe5; }
+@media (max-width: 700px) {
+  .employee-select { width: min(48vw, 210px); padding: 7px 5px; }
+  .topbar-right { min-width: 0; gap: 6px; }
+  .demo-pill { display: none; }
+  .career-option { align-items: flex-start; }
+}

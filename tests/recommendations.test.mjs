@@ -133,7 +133,7 @@ test("parses quoted CSV values, escaped quotes, and a UTF-8 BOM", () => {
   ]);
 });
 
-test("keeps every recommendation valid across the complete supplied dataset", () => {
+test("keeps every recommendation valid across the complete supplied dataset", t => {
   const dataPath = relative => fileURLToPath(new URL(`../data/career_quest/${relative}`, import.meta.url));
   const employees = JSON.parse(readFileSync(dataPath("employees.json"), "utf8")).employees;
   const roleProfiles = JSON.parse(readFileSync(dataPath("skills.json"), "utf8")).role_profiles;
@@ -149,6 +149,7 @@ test("keeps every recommendation valid across the complete supplied dataset", ()
 
   let goalCount = 0;
   let coveredCount = 0;
+  let recommendationCount = 0;
   for (const person of employees) {
     const result = rankLearningActivities({ employee: person, roleProfiles, skills, events, history, asOfDate });
     assert.ok(result.recommendations.length <= 3);
@@ -159,6 +160,7 @@ test("keeps every recommendation valid across the complete supplied dataset", ()
     }
     goalCount += 1;
     if (result.recommendations.length) coveredCount += 1;
+    recommendationCount += result.recommendations.length;
     const personHistory = history.filter(row => row.employee_id === person.employee_id);
     for (const recommendation of result.recommendations) {
       const item = recommendation.event;
@@ -177,4 +179,43 @@ test("keeps every recommendation valid across the complete supplied dataset", ()
   }
   assert.ok(goalCount > 0);
   assert.ok(coveredCount > 0);
+  t.diagnostic(`${coveredCount}/${goalCount} employees with goals have at least one eligible recommendation; ${recommendationCount} verified recommendations across the dataset.`);
+});
+
+
+test("uses the latest enrollment state for recurring events", () => {
+  const results = getResults([
+    event("EV_036", [["SK_TEAM"]], { upcoming_sessions: ["2026-11-01", "2026-12-01"] })
+  ], { ...employee, last_review_date: "2026-09-20" }, [
+    { employee_id: "E-1", event_id: "EV_036", status: "in_progress", date: "2026-08-01" },
+    { employee_id: "E-1", event_id: "EV_036", status: "completed", date: "2026-09-15" }
+  ]);
+  assert.equal(results.recommendations[0].event.event_id, "EV_036");
+  assert.equal(results.recommendations[0].nextSession, "2026-11-01");
+});
+
+test("skips the session date already recorded in an attendance history", () => {
+  const results = getResults([
+    event("EV_SESSIONS", [["SK_TEAM"]], { upcoming_sessions: ["2026-11-01", "2026-12-01"] })
+  ], employee, [
+    { employee_id: "E-1", event_id: "EV_SESSIONS", status: "no_show", date: "2026-11-01" }
+  ]);
+  assert.equal(results.recommendations[0].nextSession, "2026-12-01");
+});
+
+
+test("does not invent an employee career goal", () => {
+  const result = getResults([event("EV_OK", [["SK_CORE"]])], { ...employee, career_goal: null });
+  assert.equal(result.status, "career_goal_missing");
+  assert.equal(result.targetProfile, null);
+  assert.equal(result.recommendations.length, 0);
+});
+
+test("post-review course caps never lower an already higher assessed skill", () => {
+  const person = { ...employee, skills: { ...employee.skills, SK_API: 2 } };
+  const cappedCourse = event("EV_CAP", [["SK_API", 1, 1]]);
+  const result = getResults([cappedCourse], person, [
+    { employee_id: "E-1", event_id: "EV_CAP", status: "completed", date: "2026-09-15" }
+  ]);
+  assert.equal(result.effectiveSkills.SK_API, 2);
 });
