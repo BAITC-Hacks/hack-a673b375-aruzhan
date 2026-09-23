@@ -14,8 +14,8 @@ A course catalog alone does not tell an employee what to learn next or why. Care
 
 | Capability | What the prototype demonstrates |
 | --- | --- |
-| Personal career journey | A Three.js career floor with up to three eligible A/B/C checkpoints and a detail panel for each activity. |
-| Explainable recommendations | Role, grade, prerequisites, participation history, session availability and target skill gains determine the result; source records and filter diagnostics are visible. |
+| Personal career journey | An always-visible career goal above a desktop map/detail layout, with up to three eligible A/B/C checkpoints and chips for duration, availability and skills. |
+| Explainable recommendations | Role, grade, prerequisites, participation history, session availability and target skill gains determine the result; source records, eligibility details and filter diagnostics remain available in closed disclosures. |
 | Skills and career exploration | Compare skills with a selected role and grade, inspect individual gaps, and explore upward or same-grade lateral skill matches. |
 | Impact preview | Preview estimated skill coverage, then Undo. Assessed skills, completion history and HR totals stay unchanged. |
 | HR insights | See the five most common assessed skill gaps against employees' saved goals, with explicit employee counts. |
@@ -40,12 +40,12 @@ Open [Career Quest on localhost](http://127.0.0.1:4174). Stop with `Ctrl+C`. The
 The app's main navigation is in English; the labels below match the UI. These three README versions translate the documentation, not the application.
 
 1. **Start with `E0101`** in `Employee profile` (the default). In `My journey`, inspect the Backend Engineer Junior → Middle goal and the A/B/C choices: `EV_005`, `EV_012`, `EV_040`.
-2. **Explain the first recommendation.** Select A and read `Why this helps`. Open `Why it fits you & what comes next` → `View supporting records` for the underlying evidence, then select `Preview impact`. Estimated coverage moves from **42% to 48%** while assessed coverage stays **42%**. Press `Undo`; try `2D view` to demonstrate the alternative controls.
+2. **Explain the first recommendation.** Select A, read `Why this step`, and compare the scaled `Current estimate` → `After learning` → `Target` skill bars under `Expected change`. Open `Why it fits you & what comes next` → `View supporting records` for the underlying evidence, then select `Preview impact`. Estimated coverage moves from **42% to 48%** while assessed coverage stays **42%**. Press `Undo`; try `2D view` to demonstrate the alternative controls.
 3. **Explore a skill and a destination.** Open `Skills` and select SQL. This separate skill focus does not replace the overall recommendations. Use `Change goal` to explicitly choose another role and grade; transient selections and previews reset.
 4. **Show HR value.** Open `HR insights` to inspect aggregate assessed gaps. A local goal change or impact preview does not alter these saved-goal totals.
 5. **Show an honest edge case.** Select `E0010` for a genuine catalog gap, `E0176` for a prerequisite step (`EV_020` toward `EV_021`, conditional on reassessment and session availability), or `E0003` for an employee who must choose a goal first.
 
-Optional, after configuring the provider: expand `AI career coach`, select `Explain my next steps`, and inspect `What the coach checked`. Select a returned step to read `Why this helps` and a concrete practice challenge: the skill to practise, a small task, the artifact to produce and two or three observable success criteria. Use fictional examples or a local sandbox. These optional AI challenges are outside the activity catalog; they do not create bookings, record completion or award assessed gains. Without a key, the coach reports that it is unavailable.
+Optional, after configuring the provider: expand `AI career coach`, select `Explain my next steps`, and inspect `What the coach checked`. Select a returned step to read `Why this step` and a concrete `Practice challenge`: start with `Build`, then open `Deliver & check` for the artifact and success criteria. The challenge identifies the skill to practise, a small task, the artifact to produce and two or three observable success criteria. Use fictional examples or a local sandbox. These optional AI challenges are outside the activity catalog; they do not create bookings, record completion or award assessed gains. Without a key, the coach reports that it is unavailable.
 
 ## How recommendations work
 
@@ -95,7 +95,9 @@ Runtime limits: **30 seconds, 5 model rounds, 9 tool calls, 2,000 output tokens 
 
 ## Stack and repository map
 
-Vanilla HTML/CSS/JavaScript modules, Three.js, and a native Node HTTP server and test runner. The browser and backend share one recommendation engine.
+Vanilla HTML/CSS/JavaScript modules, Three.js, and a native Node HTTP server and test runner. The browser and backend share one unchanged recommendation engine. Manrope is self-hosted via pinned `@fontsource-variable/manrope` `5.3.0`; the browser does not request a third-party font service.
+
+The light interface uses white cards, near-black `#17211D` text and `#526159` secondary text, with Halyk green/yellow accents. The desktop type hierarchy is 40px/800 page titles, 24px/700 card titles, 17px/500 body text and 14px/600 labels. Skill estimates and potential learning changes remain visually separate from assessed coverage.
 
 ```text
 frontend/

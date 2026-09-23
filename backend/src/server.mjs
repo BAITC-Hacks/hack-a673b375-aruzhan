@@ -21,13 +21,14 @@ const publicFiles = new Map([
   ["/src/journey-view.mjs", "frontend/src/journey-view.mjs"],
   ["/vendor/three/three.module.js", "node_modules/three/build/three.module.js"],
   ["/vendor/three/three.core.js", "node_modules/three/build/three.core.js"],
+  ["/fonts/manrope-latin.woff2", "node_modules/@fontsource-variable/manrope/files/manrope-latin-wght-normal.woff2"],
   ["/shared/recommendations.mjs", "backend/src/domain/recommendations.mjs"],
   ["/data/career_quest/employees.json", "backend/data/career_quest/employees.json"],
   ["/data/career_quest/events.json", "backend/data/career_quest/events.json"],
   ["/data/career_quest/skills.json", "backend/data/career_quest/skills.json"],
   ["/data/career_quest/activity_history.csv", "backend/data/career_quest/activity_history.csv"]
 ]);
-const contentTypes = { html: "text/html", css: "text/css", js: "text/javascript", mjs: "text/javascript", json: "application/json", csv: "text/csv" };
+const contentTypes = { html: "text/html", css: "text/css", js: "text/javascript", mjs: "text/javascript", json: "application/json", csv: "text/csv", woff2: "font/woff2" };
 
 export async function loadDataset(root = projectRoot) {
   const read = name => readFile(resolve(root, "backend/data/career_quest", name), "utf8");
@@ -97,7 +98,8 @@ export function createAppServer({ dataset, apiKey, model = DEFAULT_MODEL, provid
       if (!file) return sendJson(response, 404, errorBody("not_found", "Not found."));
       const content = await readFile(resolve(root, file));
       const extension = file.split(".").at(-1);
-      response.writeHead(200, { "Content-Type": `${contentTypes[extension]}; charset=utf-8`, "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" });
+      const contentType = extension === "woff2" ? contentTypes[extension] : `${contentTypes[extension]}; charset=utf-8`;
+      response.writeHead(200, { "Content-Type": contentType, "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" });
       response.end(request.method === "HEAD" ? undefined : content);
     } catch {
       if (!response.headersSent) sendJson(response, 500, errorBody("server_error", "Сервер не смог обработать запрос."));

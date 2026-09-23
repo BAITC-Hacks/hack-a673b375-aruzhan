@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { relevantBlocker, visibleSteps, emptyMessage, blockerText, supportingRecords, stepCard } from "../src/journey-view.mjs";
+import { previewImpact } from "../src/impact-preview.mjs";
 
 const activity = (eventId, skillId, gain, maxLevel) => ({
   event_id: eventId,
@@ -107,12 +108,13 @@ test("matching AI rationale is readable, escaped and separate from canonical eve
     improvements: [{ skill_id: "SK_API", afterEvent: 9876 }]
   };
   const html = stepCard(fixture.item, fixture.result, null, fixture.skills, fixture.asOfDate, coachStep);
-  assert.match(html, /Why this helps/);
+  assert.match(html, /Why this step/);
   assert.match(html, /Practice challenge/);
-  assert.match(html, /Deliverable/);
-  assert.match(html, /Done when/);
-  const completionDisclosure = html.match(/<details\b[^>]*>\s*<summary[^>]*>Done when<\/summary>/)?.[0];
-  assert.ok(completionDisclosure, "completion checks are available through a native disclosure");
+  assert.match(html, /class="practice-phase">Build</);
+  assert.match(html, /<h5>Deliver<\/h5>/);
+  assert.match(html, /<h5>Check<\/h5>/);
+  const completionDisclosure = html.match(/<details\b[^>]*>\s*<summary[^>]*>Deliver &amp; check<\/summary>/)?.[0];
+  assert.ok(completionDisclosure, "deliverable and completion checks are available through a native disclosure");
   assert.doesNotMatch(completionDisclosure, /<details\b[^>]*\sopen(?:\s|=|>)/);
   assert.match(html, /&lt;script&gt;alert\(&quot;model&quot;\)&lt;\/script&gt;/);
   assert.match(html, /&lt;img src=x onerror=&quot;task\(\)&quot;&gt;/);
@@ -127,8 +129,9 @@ test("matching AI rationale is readable, escaped and separate from canonical eve
   assert.match(initiallyVisible, /Design an API endpoint/, "the concrete task is visible without opening a disclosure");
   assert.match(html, /4 hours/);
   assert.match(html, /15 Oct 2026/);
-  assert.match(html, /Target: 3/);
-  assert.match(html, /class="gain-arrow"[^>]*>→<\/span>2/);
+  assert.match(html.replace(/<[^>]*>/g, ""), /Target: 3/);
+  assert.match(html, /aria-label="Current estimate 1; after learning 2; target 3"/);
+  assert.ok(html.indexOf('data-preview="EV_API"') < html.indexOf('class="application-tip"'), "preview is available before a long practice challenge");
   assert.doesNotMatch(html, /INVENTED_EVENT_TITLE|9875|9876|2035/);
   assert.deepEqual(fixture, before, "rendering a rationale cannot change assessments or event facts");
 });
@@ -144,7 +147,7 @@ test("stale or unverified AI prose is ignored while a useful deterministic expla
     assert.doesNotMatch(html, /STALE_RATIONALE|STALE_PRACTICE|UNVERIFIED_RATIONALE|UNVERIFIED_PRACTICE/);
     assert.equal(html, fallback);
   }
-  assert.match(fallback, /Why this helps/);
+  assert.match(fallback, /Why this step/);
   assert.match(fallback, /API design/);
   assert.match(fallback, /Backend Developer/);
   assert.match(fallback, /Middle/);
@@ -224,4 +227,65 @@ test("catalog and target names cannot become HTML through deterministic fallback
   assert.match(html, /&lt;svg onload=&quot;attack\(\)&quot;&gt;Course/);
   assert.match(html, /&lt;b&gt;API &amp; design&lt;\/b&gt;/);
   assert.match(html, /&lt;img src=x onerror=&quot;attack\(\)&quot;&gt;/);
+});
+
+test("expected-change bars share a five-level scale and retain visible current, after and target values", () => {
+  const { item, result, skills, asOfDate } = explanationFixture();
+  item.improvements.push({ skill_id: "SK_SQL", name: "SQL", current: 3, afterEvent: 4, requirement: 5, critical: false });
+  result.targetProfile.required_skills.SK_SQL = 5;
+  const html = stepCard(item, result, null, skills, asOfDate);
+  const marks = [...html.matchAll(/class="skill-change-(after|current|target)" style="(width|left):([\d.]+)%"/g)]
+    .map(([, kind, position, percent]) => [kind, position, Number(percent)]);
+  assert.deepEqual(marks, [
+    ["after", "width", 40], ["current", "width", 20], ["target", "left", 60],
+    ["after", "width", 80], ["current", "width", 60], ["target", "left", 100]
+  ]);
+  assert.match(html, /Scale 0–5 · estimated levels/);
+  assert.match(html, /aria-label="Current estimate 3; after learning 4; target 5"/);
+  const visible = html.replace(/<[^>]*>/g, "");
+  assert.match(visible, /Current estimate 1/);
+  assert.match(visible, /After learning 2/);
+  assert.match(visible, /Target: 3/);
+  assert.match(html, /data-skill-focus="SK_API"/);
+  assert.match(html, /data-skill-focus="SK_SQL"/);
+});
+
+test("the card shows actual availability, with no invented session for self-paced activities", () => {
+  const { item, result, skills, asOfDate } = explanationFixture();
+  const scheduled = stepCard(item, result, null, skills, asOfDate);
+  assert.match(scheduled, /class="step-card-header"/);
+  assert.match(scheduled, /class="step-duration"><strong>4 hours/);
+  assert.match(scheduled, /Next session · 15 Oct 2026/);
+  assert.match(scheduled, /class="step-chip skill-chip">API design/);
+  item.nextSession = null;
+  const selfPaced = stepCard(item, result, null, skills, asOfDate);
+  assert.match(selfPaced, /Self-paced · Start anytime/);
+  assert.doesNotMatch(selfPaced, /Next session|15 Oct 2026/);
+});
+
+test("non-target prerequisite skills stay readable without linking to a missing target axis", () => {
+  const { item, result, skills, asOfDate } = explanationFixture();
+  item.kind = "prerequisite";
+  item.improvements = [{ skill_id: "SK_BASIC", name: "Foundations", current: 0, afterEvent: 1, requirement: 2, critical: false }];
+  item.unlocks = [{ eventId: "EV_NEXT", title: "Advanced APIs" }];
+  const html = stepCard(item, result, null, skills, asOfDate);
+  assert.match(html, /Foundations/);
+  assert.match(html, /Advanced APIs/);
+  assert.match(html.replace(/<[^>]*>/g, ""), /Prerequisite: 2/);
+  assert.doesNotMatch(html, /data-skill-focus="SK_BASIC"/);
+});
+
+test("impact rendering preserves the assessed profile and offers Undo instead of a completion action", () => {
+  const fixture = explanationFixture();
+  fixture.result.recommendations = [fixture.item];
+  const preview = previewImpact(fixture.result, fixture.item);
+  const before = structuredClone({ fixture, preview });
+  const html = stepCard(fixture.item, fixture.result, preview, fixture.skills, fixture.asOfDate);
+  assert.match(html, /aria-label="Impact preview"/);
+  assert.match(html, /<span>33%<\/span>/);
+  assert.match(html, /<span>67%<\/span>/);
+  assert.match(html, /Assessed coverage stays 33%/);
+  assert.match(html, /data-undo/);
+  assert.doesNotMatch(html, /data-preview=|data-complete=/);
+  assert.deepEqual({ fixture, preview }, before);
 });

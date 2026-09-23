@@ -21,9 +21,16 @@ test("server exposes only public assets and same-origin validated coach requests
     for (const file of [".env", ".git/config", "server.mjs", "coach.mjs", "docs/agent/runtime.md", "backend/.env", "backend/.env.example",
       "backend/src/server.mjs", "backend/src/coach.mjs", "backend/src/domain/recommendations.mjs", "backend/tests/server.test.mjs",
       "frontend/tests/skill-chart.test.mjs", "src/server.mjs", "shared/coach.mjs", "node_modules/three/package.json",
-      "vendor/three/package.json", "vendor/three/three.webgpu.js"]) {
+      "vendor/three/package.json", "vendor/three/three.webgpu.js", "fonts/package.json", "fonts/manrope-cyrillic.woff2",
+      "node_modules/@fontsource-variable/manrope/package.json"]) {
       assert.equal((await fetch(`${origin}/${file}`)).status, 404, file);
     }
+    const font = await fetch(`${origin}/fonts/manrope-latin.woff2`);
+    assert.equal(font.status, 200);
+    assert.equal(font.headers.get("content-type"), "font/woff2");
+    const fontBytes = Buffer.from(await font.arrayBuffer());
+    assert.equal(fontBytes.subarray(0, 4).toString("ascii"), "wOF2");
+    assert.ok(fontBytes.length > 10_000 && fontBytes.length < 100_000, "Serve the complete local variable font");
     const employee = dataset.employees.find(item => item.career_goal);
     const request = { method: "POST", headers: { "Content-Type": "application/json", Origin: origin },
       body: JSON.stringify({ employeeId: employee.employee_id, goal: employee.career_goal }) };
