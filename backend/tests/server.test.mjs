@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { once } from "node:events";
-import { createAppServer, loadDataset } from "../server.mjs";
+import { createAppServer, loadDataset } from "../src/server.mjs";
 
 test("server exposes only public assets and same-origin validated coach requests", async () => {
   const dataset = await loadDataset();
@@ -12,8 +12,14 @@ test("server exposes only public assets and same-origin validated coach requests
   try {
     const health = await (await fetch(`${origin}/api/health`)).json();
     assert.equal(health.providerConfigured, false);
-    assert.equal((await fetch(`${origin}/`)).status, 200);
-    for (const file of [".env", ".git/config", "server.mjs", "coach.mjs", "docs/agent/runtime.md"]) {
+    for (const file of ["", "index.html", "src/app.js", "src/styles.css", "src/skill-chart.mjs", "src/recommendation-view.mjs",
+      "src/hr-summary.mjs", "shared/recommendations.mjs", "data/career_quest/employees.json",
+      "data/career_quest/events.json", "data/career_quest/skills.json", "data/career_quest/activity_history.csv"]) {
+      assert.equal((await fetch(`${origin}/${file}`)).status, 200, file);
+    }
+    for (const file of [".env", ".git/config", "server.mjs", "coach.mjs", "docs/agent/runtime.md", "backend/.env", "backend/.env.example",
+      "backend/src/server.mjs", "backend/src/coach.mjs", "backend/src/domain/recommendations.mjs", "backend/tests/server.test.mjs",
+      "frontend/tests/skill-chart.test.mjs", "src/server.mjs", "shared/coach.mjs"]) {
       assert.equal((await fetch(`${origin}/${file}`)).status, 404, file);
     }
     const employee = dataset.employees.find(item => item.career_goal);

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { parseCsv, rankLearningActivities } from "../recommendations.mjs";
+import { parseCsv, rankLearningActivities } from "../src/domain/recommendations.mjs";
 
 const data = name => new URL(`../data/career_quest/${name}`, import.meta.url);
 const load = name => JSON.parse(readFileSync(data(name), "utf8"));

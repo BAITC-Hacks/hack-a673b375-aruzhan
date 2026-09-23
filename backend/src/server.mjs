@@ -3,20 +3,29 @@ import { readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { resolve } from "node:path";
-import { parseCsv } from "./recommendations.mjs";
+import { parseCsv } from "./domain/recommendations.mjs";
 import { createOpenAIProvider, DEFAULT_MODEL, runCoach } from "./coach.mjs";
 
-const projectRoot = fileURLToPath(new URL(".", import.meta.url));
-const publicFiles = new Set([
-  "index.html", "styles.css", "app.js", "recommendations.mjs", "skill-chart.mjs",
-  "recommendation-view.mjs", "hr-summary.mjs",
-  "data/career_quest/employees.json", "data/career_quest/events.json",
-  "data/career_quest/skills.json", "data/career_quest/activity_history.csv"
+const projectRoot = fileURLToPath(new URL("../../", import.meta.url));
+// URL-to-file mapping is explicit: only the pure recommendation module is shared.
+const publicFiles = new Map([
+  ["/", "frontend/index.html"],
+  ["/index.html", "frontend/index.html"],
+  ["/src/styles.css", "frontend/src/styles.css"],
+  ["/src/app.js", "frontend/src/app.js"],
+  ["/src/skill-chart.mjs", "frontend/src/skill-chart.mjs"],
+  ["/src/recommendation-view.mjs", "frontend/src/recommendation-view.mjs"],
+  ["/src/hr-summary.mjs", "frontend/src/hr-summary.mjs"],
+  ["/shared/recommendations.mjs", "backend/src/domain/recommendations.mjs"],
+  ["/data/career_quest/employees.json", "backend/data/career_quest/employees.json"],
+  ["/data/career_quest/events.json", "backend/data/career_quest/events.json"],
+  ["/data/career_quest/skills.json", "backend/data/career_quest/skills.json"],
+  ["/data/career_quest/activity_history.csv", "backend/data/career_quest/activity_history.csv"]
 ]);
 const contentTypes = { html: "text/html", css: "text/css", js: "text/javascript", mjs: "text/javascript", json: "application/json", csv: "text/csv" };
 
 export async function loadDataset(root = projectRoot) {
-  const read = name => readFile(resolve(root, "data/career_quest", name), "utf8");
+  const read = name => readFile(resolve(root, "backend/data/career_quest", name), "utf8");
   const [employeeText, eventText, skillText, historyText] = await Promise.all([
     read("employees.json"), read("events.json"), read("skills.json"), read("activity_history.csv")
   ]);
@@ -79,8 +88,8 @@ export function createAppServer({ dataset, apiKey, model = DEFAULT_MODEL, provid
         } finally { busy = false; }
       }
       if (request.method !== "GET" && request.method !== "HEAD") return sendJson(response, 405, errorBody("method", "Method not allowed."));
-      const file = url.pathname === "/" ? "index.html" : decodeURIComponent(url.pathname.slice(1));
-      if (!publicFiles.has(file)) return sendJson(response, 404, errorBody("not_found", "Not found."));
+      const file = publicFiles.get(decodeURIComponent(url.pathname));
+      if (!file) return sendJson(response, 404, errorBody("not_found", "Not found."));
       const content = await readFile(resolve(root, file));
       const extension = file.split(".").at(-1);
       response.writeHead(200, { "Content-Type": `${contentTypes[extension]}; charset=utf-8`, "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" });
@@ -93,7 +102,7 @@ export function createAppServer({ dataset, apiKey, model = DEFAULT_MODEL, provid
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
-  const envFile = resolve(projectRoot, ".env");
+  const envFile = resolve(projectRoot, "backend/.env");
   if (existsSync(envFile)) process.loadEnvFile(envFile);
   const port = Number(process.argv[2] ?? process.env.PORT ?? 4173);
   if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error("Invalid port");

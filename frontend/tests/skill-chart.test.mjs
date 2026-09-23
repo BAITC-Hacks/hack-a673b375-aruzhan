@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { buildSkillChartData } from "../skill-chart.mjs";
+import { buildSkillChartData } from "../src/skill-chart.mjs";
 
 const profile = {
   required_skills: { SK_CORE: 3, SK_TEAM: 2 },

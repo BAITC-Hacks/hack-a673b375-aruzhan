@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { parseCsv, rankCareerOptions, rankLearningActivities } from "../recommendations.mjs";
+import { parseCsv, rankCareerOptions, rankLearningActivities } from "../src/domain/recommendations.mjs";
 
 const asOfDate = "2026-10-01";
 const employee = {

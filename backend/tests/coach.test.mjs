@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { COACH_LIMITS, createCoachContext, createOpenAIProvider, runCoach, runDomainTool, validatePlan } from "../coach.mjs";
+import { COACH_LIMITS, createCoachContext, createOpenAIProvider, runCoach, runDomainTool, validatePlan } from "../src/coach.mjs";
 
 export const dataset = {
   asOfDate: "2026-10-01",

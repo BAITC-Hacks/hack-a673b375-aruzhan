@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { summarizeCompetencyGaps } from "../hr-summary.mjs";
+import { summarizeCompetencyGaps } from "../src/hr-summary.mjs";
 
 const roleProfiles = [
   { role: "Developer", grade: "Middle", required_skills: { SK_CODE: 3, SK_TEAM: 2 } },

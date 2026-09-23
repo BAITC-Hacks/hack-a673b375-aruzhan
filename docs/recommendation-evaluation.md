@@ -1,6 +1,6 @@
 # Recommendation evaluation
 
-Run `node scripts/evaluate-recommendations.mjs` from the repository root. The script loads all supplied records, evaluates every employee, independently checks returned event eligibility and expected gains, and prints representative results and filter counts. It checks both the default top-three output and the complete candidate pool used by the radar and AI coach; it also asserts that direct and prerequisite lists contain no duplicate event IDs. Dataset time is **2026-10-01**, not the computer clock.
+Run `npm run evaluate` from the repository root. The script loads all supplied records, evaluates every employee, independently checks returned event eligibility and expected gains, and prints representative results and filter counts. It checks both the default top-three output and the complete candidate pool used by the radar and AI coach; it also asserts that direct and prerequisite lists contain no duplicate event IDs. Dataset time is **2026-10-01**, not the computer clock.
 
 ## Result for the supplied dataset
 
@@ -58,12 +58,12 @@ A preparatory suggestion must itself satisfy current role, grade, non-repeat, ac
 
 ## Focused regression coverage
 
-`node --test tests/recommendations.test.mjs` passed all 19 tests after the change. Coverage includes stage accounting, evidence references, assessed versus estimated progress, future-dated gains, current-role restrictions, fulfilled targets, legitimate prerequisite bridges, history tie-breaking, repeat/session handling, and whole-dataset direct recommendation validity. UI filter-reset and coach/server tests live in their separate modules.
+`node --test backend/tests/recommendations.test.mjs` passed all 19 tests after the change. Coverage includes stage accounting, evidence references, assessed versus estimated progress, future-dated gains, current-role restrictions, fulfilled targets, legitimate prerequisite bridges, history tie-breaking, repeat/session handling, and whole-dataset direct recommendation validity. UI filter-reset and coach/server tests live in their separate modules.
 
 
 ## Integrated verification
 
-The integrated suite passed **40 tests**; `node --check app.js` and `git diff --check` passed. The all-candidate evaluation independently checked **310** eligible direct/prerequisite entries across all 200 employees with zero detected eligibility violations, while the default displayed recommendation count remains 233.
+The integrated suite passed **40 tests**; `npm run check` and `git diff --check` passed. The all-candidate evaluation independently checked **310** eligible direct/prerequisite entries across all 200 employees with zero detected eligibility violations, while the default displayed recommendation count remains 233.
 
 Browser checks performed on the integrated implementation:
 

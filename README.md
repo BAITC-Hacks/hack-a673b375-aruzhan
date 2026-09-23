@@ -10,12 +10,35 @@ A dependency-free demo built on the supplied synthetic Career Quest dataset (200
 From this folder, start the Node 22 server (no installation needed):
 
 ```powershell
-node server.mjs 4174
+npm start -- 4174
 ```
 
 Open <http://127.0.0.1:4174> and stop the server with `Ctrl+C`. A static Python server cannot run the coach API.
 
-Run tests with `node --test`; evaluate all profiles with `node scripts/evaluate-recommendations.mjs`. Syntax/whitespace checks: `node --check app.js` and `git diff --check`.
+Run tests with `npm test`; evaluate all profiles with `npm run evaluate`. Syntax/whitespace checks: `npm run check` and `git diff --check`. There are no dependencies to install. Without a port argument, the server uses 4173.
+
+### Project structure
+
+```text
+frontend/
+  index.html
+  src/                  # Browser UI, styles, charts and view helpers
+  tests/                # Frontend unit tests
+backend/
+  src/
+    server.mjs          # HTTP API and explicit public asset routes
+    coach.mjs           # AI workflow and provider integration
+    domain/
+      recommendations.mjs # One deterministic recommendation engine
+  data/career_quest/    # Supplied synthetic dataset
+  scripts/             # Whole-dataset evaluation
+  tests/               # Domain, coach and HTTP integration tests
+  .env.example
+docs/                   # Project documentation and evaluations
+package.json            # Root start/test/check/evaluate commands
+```
+
+The backend serves the frontend and only explicitly approved assets. The pure recommendation module is shared with the browser at `/shared/recommendations.mjs` to keep simulation and server validation consistent without duplicating rules. Other backend source files, tests, scripts and credentials are never served. Public dataset URLs remain `/data/career_quest/*`; files live under `backend/data/`.
 
 ### Recommendation behavior
 
@@ -33,7 +56,7 @@ The headline progress and HR summary use assessed profile levels. Expected post-
 
 ### AI coach
 
-Copy `.env.example` to `.env`, set `OPENAI_API_KEY` locally, and restart the Node server. Never put the key in browser code or chat. `.env` is ignored and cannot be served by the static file allowlist. Default model: `gpt-4.1-mini-2025-04-14`; `OPENAI_MODEL` can override it with a Responses/function-calling/Structured-Outputs-compatible model.
+Copy `backend/.env.example` to `backend/.env`, set `OPENAI_API_KEY` locally, and restart the Node server. Never put the key in browser code or chat. `.env` files are ignored and cannot be served by the static file allowlist. Default model: `gpt-4.1-mini-2025-04-14`; `OPENAI_MODEL` can override it with a Responses/function-calling/Structured-Outputs-compatible model.
 
 The coach calls three bound tools: `retrieve_profile`, `inspect_gaps`, and `find_eligible_activities`. It chooses event IDs, skill IDs and reason codes. Application code validates membership and constructs explanations from evidence; eligibility, gains, dates and progress stay deterministic. The tool trace is visible. Real dataset history is used; local browser simulations are excluded.
 

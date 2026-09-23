@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { selectRecommendationViews, resetProfileFocus } from "../recommendation-view.mjs";
+import { selectRecommendationViews, resetProfileFocus } from "../src/recommendation-view.mjs";
 
 const recommendations = [
   { event: { event_id: "EV_1" }, improvements: [{ skill_id: "SK_CODE" }] },

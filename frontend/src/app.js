@@ -1,9 +1,9 @@
-import { parseCsv, rankCareerOptions, rankLearningActivities } from "./recommendations.mjs";
+import { parseCsv, rankCareerOptions, rankLearningActivities } from "/shared/recommendations.mjs";
 import { buildSkillChartData } from "./skill-chart.mjs";
 import { selectRecommendationViews, resetProfileFocus } from "./recommendation-view.mjs";
 import { summarizeCompetencyGaps } from "./hr-summary.mjs";
 
-const DATA_ROOT = "./data/career_quest/";
+const DATA_ROOT = "/data/career_quest/";
 const EVENT_TYPE_LABELS = {
   course: "Курс", workshop: "Воркшоп", mentoring: "Наставничество",
   certification: "Сертификация", meetup: "Встреча", onboarding: "Адаптация"
@@ -445,7 +445,7 @@ $("#coach-generate").addEventListener("click", async () => {
       body: JSON.stringify({ employeeId: employee.employee_id, goal: getGoal(employee) ?? null }), signal: request.signal
     });
     if (!response.headers.get("content-type")?.includes("application/json")) {
-      throw new Error("AI-сервер не запущен. Запусти node server.mjs вместо статического сервера.");
+      throw new Error("AI-сервер не запущен. Запусти npm start вместо статического сервера.");
     }
     const plan = await response.json();
     if (coachRequest !== request) return;

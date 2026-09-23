@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { rankLearningActivities } from "./recommendations.mjs";
+import { rankLearningActivities } from "./domain/recommendations.mjs";
 
 export const DEFAULT_MODEL = "gpt-4.1-mini-2025-04-14";
 export const COACH_LIMITS = Object.freeze({ rounds: 5, toolCalls: 9, timeoutMs: 30_000, outputTokens: 1200, totalTokens: 24_000 });
