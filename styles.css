@@ -214,6 +214,23 @@ h1 { margin: 8px 0 6px; font-size: clamp(23px, 2.3vw, 30px); font-weight: 650; l
 .career-option small { display: block; margin-top: 4px; color: #9a7b38; font-size: 8px; }
 .path-action { flex: 0 0 auto; border: 1px solid #cbded3; border-radius: 5px; padding: 6px 8px; background: #f0f7f2; color: #28624d; font-size: 9px; font-weight: 600; cursor: pointer; }
 .path-action:hover { background: #e0efe5; }
+.evidence-details { margin: 10px 0; color: #546b61; font-size: 11px; line-height: 1.5; overflow-wrap: anywhere; }
+.evidence-details summary { cursor: pointer; font-weight: 600; }
+.evidence-details ul, .evidence-details ol { padding-left: 20px; }
+.evidence-details summary:focus-visible, .rec-action:focus-visible, .gain-chip:focus-visible { outline: 3px solid #e3bd38; outline-offset: 3px; }
+.coach-panel { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
+.coach-panel h3, .subheading { font-size: 13px; color: #30483f; }
+.rec-action:disabled { opacity: .55; cursor: wait; }
+#coach-plan { display: grid; gap: 8px; }
+#coach-plan h4 { margin: 0; font-size: 12px; }
+#prerequisite-steps:empty, #focused-event:empty { display: none; }
+#focused-event { margin-bottom: 14px; }
+.hr-panel { margin-top: 22px; padding: 20px; background: var(--white); border: 1px solid var(--line); border-radius: 9px; }
+.table-scroll { overflow-x: auto; }
+.hr-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 12px; }
+.hr-table caption { text-align: left; color: var(--muted); padding-bottom: 10px; font-size: 11px; }
+.hr-table th, .hr-table td { padding: 10px 8px; border-bottom: 1px solid var(--line); }
+.hr-table small { display: block; color: var(--muted); font-weight: 400; }
 @media (max-width: 700px) {
   .employee-select { width: min(48vw, 210px); padding: 7px 5px; }
   .topbar-right { min-width: 0; gap: 6px; }

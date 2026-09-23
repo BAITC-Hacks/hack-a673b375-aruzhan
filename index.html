@@ -44,8 +44,9 @@
           <div class="track-line"><span class="track-progress" id="track-progress"></span></div>
           <div class="grade next"><span class="grade-dot">2</span><div><b id="target-grade"></b><small>Целевой уровень</small></div></div>
         </div>
-        <div class="progress-score"><strong id="progress-percent">—</strong><span><b id="progress-fraction">Загрузка…</b><small>уровней навыков</small></span></div>
+        <div class="progress-score"><strong id="progress-percent">—</strong><span><b id="progress-fraction">Загрузка…</b><small>по оценке навыков</small></span></div>
       </section>
+      <p id="estimated-progress" class="panel-note"></p>
 
       <div class="content-grid">
         <section id="skills" class="skills-panel">
@@ -57,6 +58,7 @@
             <div id="skill-radar" class="skill-radar" aria-label="Интерактивная диаграмма навыков"></div>
           </div>
           <div id="skill-focus" class="skill-focus" aria-live="polite"></div>
+          <div id="focused-event" class="recommendations" aria-live="polite"></div>
           <div id="skill-list" class="skill-list"></div>
           <p class="skill-footnote">Расчётный уровень включает оценку из профиля и ожидаемый эффект завершённых после неё активностей. Рост нужно подтвердить оценкой.</p>
         </section>
@@ -66,6 +68,16 @@
           <p id="recommendations-note" class="panel-note">Сначала проверяем доступность и соответствие, затем сравниваем пользу для цели.</p>
           <div id="recommendations" class="recommendations"></div>
           <p class="simulation-note"><span>ⓘ</span> Расчётный рост после обучения нужно подтвердить практикой или оценкой.</p>
+          <div id="prerequisite-steps" class="recommendations"></div>
+          <details class="evidence-details"><summary>Почему такие рекомендации?</summary><div id="recommendation-diagnostics"></div></details>
+          <section class="coach-panel" aria-labelledby="coach-title">
+            <h3 id="coach-title">AI-коуч: план с проверкой</h3>
+            <p class="panel-note">Коуч изучает профиль, пробелы и доступные активности через инструменты. План проверяется по данным. Симуляции в этой вкладке не передаются коучу.</p>
+            <button type="button" id="coach-generate" class="rec-action">Составить AI-план</button>
+            <p id="coach-status" class="panel-note" role="status"></p>
+            <div id="coach-plan"></div>
+            <details class="evidence-details"><summary>Вызовы инструментов</summary><ol id="coach-trace"></ol></details>
+          </section>
           <div class="career-options">
             <div class="career-options-heading"><h3>Другие возможные пути</h3><span>навыки, не вакансии</span></div>
             <p class="career-options-note">Сравниваем соседний грейд и роли на твоём текущем уровне. Открытых вакансий в датасете нет.</p>
@@ -73,6 +85,12 @@
           </div>
         </section>
       </div>
+      <section class="hr-panel" aria-labelledby="hr-heading">
+        <div class="section-heading"><div><span class="eyebrow">HR · СИНТЕТИЧЕСКИЙ СРЕЗ</span><h2 id="hr-heading">Общие пробелы в компетенциях</h2></div></div>
+        <p id="hr-summary" class="panel-note"></p>
+        <div class="table-scroll"><table class="hr-table"><caption>Пять навыков с наибольшим числом сотрудников ниже требования</caption><thead><tr><th scope="col">Навык</th><th scope="col">Ниже цели</th><th scope="col">Навык нужен</th><th scope="col">Суммарный разрыв</th></tr></thead><tbody id="hr-gaps"></tbody></table></div>
+        <p class="panel-note">Только оценки из профилей и сохранённые цели. Расчётный рост, симуляции и локальная смена цели не изменяют HR-срез. Это не оценка эффективности сотрудников.</p>
+      </section>
       <footer class="page-footer"><span>Демо использует только синтетический профиль.</span><span>Career Quest · прототип</span></footer>
     </main>
   </div>

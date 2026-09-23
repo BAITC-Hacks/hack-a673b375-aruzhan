@@ -165,7 +165,7 @@ test("keeps every recommendation valid across the complete supplied dataset", t 
     for (const recommendation of result.recommendations) {
       const item = recommendation.event;
       assert.equal(item.mandatory, false);
-      assert.ok(item.target_roles.includes(person.role) || item.target_roles.includes(person.career_goal.target_role));
+      assert.ok(item.target_roles.includes(person.role));
       assert.ok(item.target_grades.includes(person.grade));
       assert.ok(!personHistory.some(row => row.event_id === item.event_id
         && row.status === "completed" && item.event_id !== "EV_036"));
@@ -218,4 +218,88 @@ test("post-review course caps never lower an already higher assessed skill", () 
     { employee_id: "E-1", event_id: "EV_CAP", status: "completed", date: "2026-09-15" }
   ]);
   assert.equal(result.effectiveSkills.SK_API, 2);
+});
+
+test("reports exact rejection stages, reasons and evidence without hiding eligible candidates", () => {
+  const result = getResults([
+    event("EV_GOOD", [["SK_CORE"]]),
+    event("EV_MANDATORY", [["SK_CORE"]], { mandatory: true }),
+    event("EV_OTHER_ROLE", [["SK_CORE"]], { target_roles: ["QA Engineer"] }),
+    event("EV_PREREQ", [["SK_CORE"]], { prerequisites: { SK_API: 1 } }),
+    event("EV_NO_SESSION", [["SK_CORE"]], { upcoming_sessions: [] }),
+    event("EV_NOT_RELEVANT", [["SK_UNUSED"]])
+  ]);
+  assert.equal(result.diagnostics.initialCount, 6);
+  assert.equal(result.diagnostics.eligibleCount, 1);
+  assert.equal(result.diagnostics.stages.reduce((sum, stage) => sum + stage.rejected, 0), 5);
+  assert.equal(result.diagnostics.stages.at(-1).remaining, 1);
+  assert.deepEqual(result.diagnostics.rejectedEvents.find(item => item.eventId === "EV_PREREQ").missingPrerequisites,
+    [{ skillId: "SK_API", current: 0, required: 1 }]);
+  const evidence = result.recommendations[0].evidence;
+  assert.ok(evidence.references.includes("events.json#EV_GOOD"));
+  assert.ok(evidence.references.includes("employees.json#E-1"));
+  assert.ok(evidence.eligibility.length >= 3);
+  assert.ok(evidence.ranking.length >= 2);
+});
+
+test("keeps assessed progress separate from simulated post-review learning gains", () => {
+  const result = getResults([event("EV_LEARNED", [["SK_API", 2]])], employee, [
+    { record_id: "R1", employee_id: "E-1", event_id: "EV_LEARNED", status: "completed", date: "2026-09-15" }
+  ]);
+  assert.equal(result.assessedSkills.SK_API, 0);
+  assert.equal(result.effectiveSkills.SK_API, 2);
+  assert.equal(result.assessedProgress.earned, 1);
+  assert.equal(result.progress.earned, 3);
+  assert.equal(employee.skills.SK_API, 0);
+});
+
+test("distinguishes satisfied requirements from unavailable courses", () => {
+  const result = getResults([], { ...employee, skills: { SK_CORE: 2, SK_API: 2, SK_TEAM: 1 } });
+  assert.equal(result.status, "requirements_met");
+  assert.deepEqual(result.skillGaps, []);
+  assert.equal(result.progress.percent, 100);
+});
+
+test("a career target does not grant eligibility for an event restricted to that other role", () => {
+  const result = getResults([event("EV_QA_ONLY", [["SK_TEAM"]], { target_roles: ["QA Engineer"] })],
+    { ...employee, career_goal: { target_role: "QA Engineer", target_grade: "Junior" } });
+  assert.equal(result.recommendations.length, 0);
+  assert.equal(result.diagnostics.rejectedEvents[0].code, "role_mismatch");
+});
+
+test("suggests a real eligible prerequisite step only when it can satisfy all missing requirements", () => {
+  const result = getResults([
+    event("EV_GOAL", [["SK_CORE"]], { prerequisites: { SK_UNUSED: 2 } }),
+    event("EV_FOUNDATION", [["SK_UNUSED", 2]]),
+    event("EV_INSUFFICIENT", [["SK_UNUSED", 1]]),
+    event("EV_UNAVAILABLE", [["SK_UNUSED", 2]], { upcoming_sessions: [] })
+  ]);
+  assert.equal(result.recommendations.length, 0);
+  assert.deepEqual(result.prerequisiteSteps.map(item => item.event.event_id), ["EV_FOUNDATION"]);
+  assert.equal(result.prerequisiteSteps[0].unlocks[0].eventId, "EV_GOAL");
+  assert.equal(result.prerequisiteSteps[0].improvements[0].requirement, 2);
+  assert.ok(result.prerequisiteSteps[0].evidence.references.includes("events.json#EV_GOAL"));
+});
+
+test("uses repeated missed participation to prefer an otherwise equivalent alternative", () => {
+  const result = getResults([
+    event("EV_A_MISSED", [["SK_CORE"]]),
+    event("EV_B_ALTERNATIVE", [["SK_CORE"]], { type: "mentoring" })
+  ], employee, [
+    { record_id: "R1", employee_id: "E-1", event_id: "EV_A_MISSED", status: "no_show", date: "2026-08-01" },
+    { record_id: "R2", employee_id: "E-1", event_id: "EV_A_MISSED", status: "no_show", date: "2026-09-01" }
+  ]);
+  assert.equal(result.recommendations[0].event.event_id, "EV_B_ALTERNATIVE");
+  const missed = result.recommendations.find(item => item.event.event_id === "EV_A_MISSED");
+  assert.equal(missed.factors.participationFriction, 2);
+  assert.ok(missed.evidence.references.includes("activity_history.csv#R1"));
+});
+
+
+test("does not award future-dated completion gains at the dataset snapshot", () => {
+  const result = getResults([event("EV_FUTURE", [["SK_API", 2]])], employee, [
+    { record_id: "R-FUTURE", employee_id: "E-1", event_id: "EV_FUTURE", status: "completed", date: "2026-12-01" }
+  ]);
+  assert.equal(result.effectiveSkills.SK_API, 0);
+  assert.equal(result.assessedProgress.earned, result.progress.earned);
 });
